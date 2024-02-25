@@ -36,10 +36,13 @@ fn header(f: &mut super::Output, bin: PeFile<'_>) {
 
 }
 
+/*
+660F6E4070 F30F5ED6 0F5BC0 F30F58CF F30F58D7
+*/
+
 fn main_camera(f: &mut super::Output, bin: PeFile<'_>) {
 	let mut save = [0; 5];
-	//488B05*{'} F680????? 74? [14-20] 488B80 u4 [25-30] 0F10B0 u4 48???????? [328-350] F30F5ECE 660F6E80 u4 F30F5ED6 0F5BC0 F30F58CF F30F58D7
-	if bin.scanner().finds_code(pat!("488B05${'} 488B80 u4 [20-30] 0F10B0 u4 48???????? [329-350] F30F5ECE 660F6E80 u4 F30F5ED6 0F5BC0 F30F58CF F30F58D7"), &mut save) {
+	if bin.scanner().finds_code(pat!("488B05${'} 488B80 u4 [10-40] 0F10B0 u4 48???????? [310-360] F30F5ECE ( 660F6E80 u4 | 660F6E40 u1 ) F30F5ED6 0F5BC0 F30F58CF F30F58D7"), &mut save) {
 		let main_camera = save[1];
 		let static_fields = save[2];
 		let world_to_screen_matrix = save[3];
