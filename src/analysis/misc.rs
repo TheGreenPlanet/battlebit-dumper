@@ -1,4 +1,5 @@
 use std::fmt::Write;
+use std::ops::Range;
 use pelite;
 use pelite::pe64::*;
 use pelite::pattern as pat;
@@ -8,6 +9,7 @@ pub fn print(f: &mut super::Output, bin: PeFile<'_>) {
 	let _ = writeln!(f.ini, "[Miscellaneous]");
 	header(f, bin);
 	main_camera(f, bin);
+	player_network_state(f, bin);
 	// entity_list(f, bin);
 	// local_entity_handle(f, bin);
 	// local_player(f, bin);
@@ -32,13 +34,8 @@ fn header(f: &mut super::Output, bin: PeFile<'_>) {
 	let _ = writeln!(f.ini, "CheckSum={:#x}", check_sum);
 	let _ = writeln!(f.ini, "ImageBase={:#x}", image_base);
 	let _ = writeln!(f.ini, "");
-
-
 }
 
-/*
-660F6E4070 F30F5ED6 0F5BC0 F30F58CF F30F58D7
-*/
 
 fn main_camera(f: &mut super::Output, bin: PeFile<'_>) {
 	let mut save = [0; 5];
@@ -59,6 +56,32 @@ fn main_camera(f: &mut super::Output, bin: PeFile<'_>) {
 		crate::print_error("unable to find MainCamera!");
 	}
 }
+
+fn player_network_state(f: &mut super::Output, bin: PeFile<'_>) {
+
+	let mut save = [0;6];
+
+	// TODO: Divide the pattern into smaller parts to increase the chance of finding offsets
+	if bin.scanner().matches_code(pat!("F20F1000 F20F1186u4 8B4008 8986???? 488B83u4 4885C0 0F84 [60-80] F20F1000 F20F1186u4 [530-570] 33D2 ?????? 488BCF F30F11?u4 F30F11????? 488B73u1")).next(&mut save) {
+		let server_position = save[1];
+		let _ = save[2];
+		let server_velocity = save[3];
+		let mouse_look = save[4];
+		let state = save[5];
+
+		let _ = writeln!(f.ini, "PlayerNetworkState!ServerPosition={:#x}", server_position);
+		let _ = writeln!(f.ini, "PlayerNetworkState!ClientPosition={:#x}", server_position+0xC);
+		let _ = writeln!(f.ini, "PlayerNetworkState!ServerVelocity={:#x}", server_velocity);
+		let _ = writeln!(f.ini, "PlayerNetworkState!ClientVelocity={:#x}", server_velocity+0xC);
+		let _ = writeln!(f.ini, "PlayerNetworkState!MouseLook={:#x}", mouse_look);
+		let _ = writeln!(f.ini, "PlayerNetwork!State={:#x}", state);
+
+	} 
+	else {
+		crate::print_error("unable to find player_network_state_positions!");
+	}
+}
+
 
 /*
 mov     rax, cs:MainCamera_TypeInfo																				..<--
