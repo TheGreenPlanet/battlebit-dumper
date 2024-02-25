@@ -61,8 +61,9 @@ fn player_network_state(f: &mut super::Output, bin: PeFile<'_>) {
 
 	let mut save = [0;6];
 
-	// TODO: Divide the pattern into smaller parts to increase the chance of finding offsets
-	if bin.scanner().matches_code(pat!("F20F1000 F20F1186u4 8B4008 8986???? 488B83u4 4885C0 0F84 [60-80] F20F1000 F20F1186u4 [530-570] 33D2 ?????? 488BCF F30F11?u4 F30F11????? 488B73u1")).next(&mut save) {
+	// TODO: Divide the pattern into smaller parts to increase the chance of finding offsets. 
+	// Do this for all double space seperated patterns in the pattern
+	if bin.scanner().matches_code(pat!("F20F1000 F20F1186u4 8B4008 8986???? 488B83u4 4885C0 0F84  [60-80] F20F1000 F20F1186u4  [530-570]  33D2 ?????? 488BCF F30F11?u4 F30F11????? 488B73u1")).next(&mut save) {
 		let server_position = save[1];
 		let _ = save[2];
 		let server_velocity = save[3];
