@@ -2,7 +2,6 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=rust
 
 # ignore ini and sh files
-*.ini
 *.sh
 
 ### Rust ###
