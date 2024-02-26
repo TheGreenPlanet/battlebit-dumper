@@ -10,6 +10,7 @@ pub fn print(f: &mut super::Output, bin: PeFile<'_>) {
 	header(f, bin);
 	main_camera(f, bin);
 	player_network_state(f, bin);
+	local_player_network_state(f, bin);
 	// entity_list(f, bin);
 	// local_entity_handle(f, bin);
 	// local_player(f, bin);
@@ -70,15 +71,30 @@ fn player_network_state(f: &mut super::Output, bin: PeFile<'_>) {
 		let mouse_look = save[4];
 		let state = save[5];
 
-		let _ = writeln!(f.ini, "PlayerNetworkState!ServerPosition={:#x}", server_position);
-		let _ = writeln!(f.ini, "PlayerNetworkState!ClientPosition={:#x}", server_position+0xC);
-		let _ = writeln!(f.ini, "PlayerNetworkState!ServerVelocity={:#x}", server_velocity);
-		let _ = writeln!(f.ini, "PlayerNetworkState!ClientVelocity={:#x}", server_velocity+0xC);
-		let _ = writeln!(f.ini, "PlayerNetworkState!MouseLook={:#x}", mouse_look);
-		let _ = writeln!(f.ini, "PlayerNetwork!State={:#x}", state);
+		let _ = writeln!(f.ini, "PlayerNetworkState_c!ServerPosition={:#x}", server_position);
+		let _ = writeln!(f.ini, "PlayerNetworkState_c!ClientPosition={:#x}", server_position+0xC);
+		let _ = writeln!(f.ini, "PlayerNetworkState_c!ServerVelocity={:#x}", server_velocity);
+		let _ = writeln!(f.ini, "PlayerNetworkState_c!ClientVelocity={:#x}", server_velocity+0xC);
+		let _ = writeln!(f.ini, "PlayerNetworkState_c!MouseLook={:#x}", mouse_look);
+		let _ = writeln!(f.ini, "PlayerNetwork_c!State={:#x}", state);
 
 	} 
 	else {
-		crate::print_error("unable to find player_network_state_positions!");
+		crate::print_error("unable to find player_network_state!");
+	}
+}
+
+fn local_player_network_state(f: &mut super::Output, bin: PeFile<'_>) {
+
+	let mut save = [0;4];
+
+	if bin.scanner().finds_code(pat!("F30F100D${0AD7A3BD} F20F?? [185-200] E8???? 488B05${'} 488B80B8000000 488D????? 488B50u1"), &mut save) {
+		let player_network_state_typeinfo = save[1];
+		let local = save[2];
+		let _ = writeln!(f.ini, "PlayerNetworkState_c={:#x}", player_network_state_typeinfo);
+		let _ = writeln!(f.ini, "PlayerNetworkState_c!Local={:#x}", local);
+	} 
+	else {
+		crate::print_error("unable to find local_player_network_state!");
 	}
 }
