@@ -25,4 +25,4 @@ cargo run --release -- "/PATH_TO_BATTLEBIT/GameAssembly.dll" human > stdout.md
 ```
 
 ## Contribution
-Contributing is very appreciated! Just send a PR and I'll look at it
+Contributing is very appreciated! Just make a PR and I'll take a look at it.
