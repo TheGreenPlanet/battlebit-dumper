@@ -10,9 +10,11 @@ pub fn print(o: &mut String, bin: PeFile<'_>) {
 	main_camera(o, bin);
 	player_network_state(o, bin);
 	player_network_state_weapon_gadget_manager(o, bin);
+	player_network_state_is_down(o, bin);
+	player_network_state_statics(o, bin);
 	local_player_network_state(o, bin);
 	player_network(o, bin);
-
+	
 	let _ = writeln!(o);
 }
 
@@ -150,6 +152,35 @@ fn player_network_state_weapon_gadget_manager(o: &mut String, bin: PeFile<'_>) {
 	}
 }
 
+
+fn player_network_state_is_down(o: &mut String, bin: PeFile<'_>) {
+	let mut save = [0;4];
+
+	// ref: 00B5E0B0, THPController::OnThreadUpdate
+	if bin.scanner().finds_code(pat!("4438B0u4 0F85???? 4438B0u4 74? F30F1005${0000A041} EB?"), &mut save) {
+		let is_down = save[1];
+		let idk_something_that_affects_distance = save[2];
+		let _ = writeln!(o, "PlayerNetworkState_c!fields.IsDown={:#x}", is_down);
+		let _ = writeln!(o, "PlayerNetworkState_c!fields.IdkSomeBoolThatAffectsDistance={:#x}", idk_something_that_affects_distance);
+	} 
+	else {
+		crate::print_error("unable to find player_network_state_is_down!");
+	}
+}
+
+fn player_network_state_statics(o: &mut String, bin: PeFile<'_>) {
+	let mut save = [0;4];
+
+	// ref: 012976A0, PlayerNetworkState::Register
+	if bin.scanner().finds_code(pat!("4088701084DB 0F84???? 488B05???? F6802F01000002 74? 39B0E0000000 75? 488BC8 E8???? 488B05u4 488B80B8000000 488B58u1"), &mut save) {
+		let _ = save[1]; // player_network_state
+		let connected_states = save[2];
+		let _ = writeln!(o, "PlayerNetworkState_c!static_fields!ConnectedStates={:#x}", connected_states);
+	} 
+	else {
+		crate::print_error("unable to find player_network_state_statics!");
+	}
+}
 
 // reo: FirstPerson_FPSway_TypeInfo!Instance, 1550E38
 // god pattern for IDA: 48 8B ?? ?? ?? ?? ??  48 8B ?? B8 00 00 00  48 8B ?8
