@@ -10,8 +10,10 @@ pub fn print(f: &mut super::Output, bin: PeFile<'_>) {
 	header(f, bin);
 	main_camera(f, bin);
 	player_network_state(f, bin);
+	player_network_state_weapon_gadget_manager(f, bin);
 	local_player_network_state(f, bin);
 	player_network(f, bin);
+
 	// entity_list(f, bin);
 	// local_entity_handle(f, bin);
 	// local_player(f, bin);
@@ -117,5 +119,43 @@ fn player_network(f: &mut super::Output, bin: PeFile<'_>) {
 		crate::print_error("unable to find player_network!");
 	}
 }
+
+fn player_network_state_weapon_gadget_manager(f: &mut super::Output, bin: PeFile<'_>) {
+	let mut save = [0;7];
+
+	// ref: 0129D010, PlayerNetworkState__get_CurrentToolSafe
+	if bin.scanner().finds_code(pat!("0FB687u4 83F805 (77? | 0F87????) 488D15???? 8B8C82A4??? 4803CA FFE1'"), &mut save) {
+		let current_loadout_index = save[1];
+		let saved_pos = save[2];
+		let _ = writeln!(f.ini, "PlayerNetworkState_c!CurrentLoadoutIndex={:#x}", current_loadout_index);
+
+		let range = Range { start: saved_pos, end: saved_pos + 0x60 };
+		if bin.scanner().finds(pat!("488B?u4 4883C4? [2-15] 488B?u4 4883C4? [2-15] 488B?u4 4883C4? [2-15] 488B?u4 4883C4? [2-15] 488B?u4 4883C4? [2-15] 488B?u4 4883C4? [2-15]"), range, &mut save) {
+			let primary = save[1];
+			let secondary = save[2];
+			let first_aid = save[3];
+			let tool_a = save[4];
+			let tool_b = save[5];
+			let throwable = save[6];
+
+			let _ = writeln!(f.ini, "PlayerNetworkState_c!=Primary{:#x}", primary);
+			let _ = writeln!(f.ini, "PlayerNetworkState_c!=Secondary{:#x}", secondary);
+			let _ = writeln!(f.ini, "PlayerNetworkState_c!=FirstAid{:#x}", first_aid);
+			let _ = writeln!(f.ini, "PlayerNetworkState_c!=ToolA{:#x}", tool_a);
+			let _ = writeln!(f.ini, "PlayerNetworkState_c!=ToolB{:#x}", tool_b);
+			let _ = writeln!(f.ini, "PlayerNetworkState_c!=Throwable{:#x}", throwable);
+		}
+		else {
+			crate::print_error("unable to find weapon_gadget_manager!");
+		}
+
+		let local = save[2];
+		let _ = writeln!(f.ini, "PlayerNetworkState_c!Local={:#x}", local);
+	} 
+	else {
+		crate::print_error("unable to find local_player_network_state!");
+	}
+}
+
 
 // ref: FirstPerson_FPSway_TypeInfo!Instance, 1550E38
