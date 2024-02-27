@@ -4,64 +4,48 @@ use pelite;
 use pelite::pe64::*;
 use pelite::pattern as pat;
 
-pub fn print(f: &mut super::Output, bin: PeFile<'_>) {
-	let _ = writeln!(f.human, "## Miscellaneous\n\n```");
-	let _ = writeln!(f.ini, "[Miscellaneous]");
-	header(f, bin);
-	main_camera(f, bin);
-	player_network_state(f, bin);
-	player_network_state_weapon_gadget_manager(f, bin);
-	local_player_network_state(f, bin);
-	player_network(f, bin);
+pub fn print(o: &mut String, bin: PeFile<'_>) {
+	let _ = writeln!(o, "[Miscellaneous]");
+	header(o, bin);
+	main_camera(o, bin);
+	player_network_state(o, bin);
+	player_network_state_weapon_gadget_manager(o, bin);
+	local_player_network_state(o, bin);
+	player_network(o, bin);
 
-	// entity_list(f, bin);
-	// local_entity_handle(f, bin);
-	// local_player(f, bin);
-	// name_list(f, bin);
-	// view_render(f, bin);
-	// local_camera(f, bin);
-	let _ = writeln!(f.human, "```\n");
-	let _ = writeln!(f.ini);
+	let _ = writeln!(o);
 }
 
-fn header(f: &mut super::Output, bin: PeFile<'_>) {
+fn header(o: &mut String, bin: PeFile<'_>) {
 	// Check if offsets are correct
 	let time_date_stamp = bin.file_header().TimeDateStamp;
 	let check_sum = bin.optional_header().CheckSum;
-	let _ = writeln!(f.human, "TimeDateStamp = {:#x}", time_date_stamp);
-	let _ = writeln!(f.human, "CheckSum = {:#x}", check_sum);
-	let _ = writeln!(f.human, "");
-
-	let _ = writeln!(f.ini, "TimeDateStamp={:#x}", time_date_stamp);
-	let _ = writeln!(f.ini, "CheckSum={:#x}", check_sum);
-	let _ = writeln!(f.ini, "");
+	let _ = writeln!(o, "TimeDateStamp={:#x}", time_date_stamp);
+	let _ = writeln!(o, "CheckSum={:#x}", check_sum);
 }
 
 
-fn main_camera(f: &mut super::Output, bin: PeFile<'_>) {
+fn main_camera(o: &mut String, bin: PeFile<'_>) {
 	let mut save = [0; 5];
 
-	// ref: 0D16080
+	// reo: 0D16080
 	// NOTE: this pattern is very reliable. Its derived from the MainCamera::WorldToScreenPoint method
-	if bin.scanner().finds_code(pat!("488B05${'} 488B80 u4 [10-40] 0F10B0 u4 48???????? [310-360] F30F5ECE ( 660F6E80 u4 | 660F6E40 u1 ) F30F5ED6 0F5BC0 F30F58CF F30F58D7"), &mut save) {
+	if bin.scanner().finds_code(pat!("488B05${'} 488B80B8000000 [10-40] 0F10B0 u4 48???????? [310-360] F30F5ECE ( 660F6E80 u4 | 660F6E40 u1 ) F30F5ED6 0F5BC0 F30F58CF F30F58D7"), &mut save) {
 		let main_camera = save[1];
-		let static_fields = save[2];
-		let world_to_screen_matrix = save[3];
-		let pixel_width = save[4];
-		let _ = writeln!(f.ini, "MainCamera_c={:#x}", main_camera);
-		let _ = writeln!(f.ini, "MainCamera_c!static_fields={:#x}", static_fields);
-		let _ = writeln!(f.ini, "MainCamera_c!x={:#x}", 0);
-		let _ = writeln!(f.ini, "MainCamera_c!y={:#x}", 4);
-		let _ = writeln!(f.ini, "MainCamera_c!WorldToScreenMatrix={:#x}", world_to_screen_matrix);
-		let _ = writeln!(f.ini, "MainCamera_c!PixelWidth={:#x}", pixel_width);
-		let _ = writeln!(f.ini, "MainCamera_c!PixelHeidht={:#x}", pixel_width + 4);
+		let world_to_screen_matrix = save[2];
+		let pixel_width = save[3];
+		let _ = writeln!(o, "MainCamera_c={:#x}", main_camera);
+		let _ = writeln!(o, "MainCamera_c!static_fields={:#x}", 0xB8);
+		let _ = writeln!(o, "MainCamera_c!static_fields!WorldToScreenMatrix={:#x}", world_to_screen_matrix);
+		let _ = writeln!(o, "MainCamera_c!static_fields!PixelWidth={:#x}", pixel_width);
+		let _ = writeln!(o, "MainCamera_c!static_fields!PixelHeidht={:#x}", pixel_width + 4);
 	}
 	else {
 		crate::print_error("unable to find MainCamera!");
 	}
 }
 
-fn player_network_state(f: &mut super::Output, bin: PeFile<'_>) {
+fn player_network_state(o: &mut String, bin: PeFile<'_>) {
 
 	let mut save = [0;6];
 
@@ -74,13 +58,13 @@ fn player_network_state(f: &mut super::Output, bin: PeFile<'_>) {
 		let mouse_look = save[4];
 		let state = save[5];
 
-		let _ = writeln!(f.ini, "PlayerNetworkState_c!ServerVelocity={:#x}", server_velocity);
-		let _ = writeln!(f.ini, "PlayerNetworkState_c!ClientVelocity={:#x}", server_velocity+0xC);
-		let _ = writeln!(f.ini, "PlayerNetworkState_c!ServerPosition={:#x}", server_position);
-		let _ = writeln!(f.ini, "PlayerNetworkState_c!ClientPosition={:#x}", server_position+0xC);
-		let _ = writeln!(f.ini, "PlayerNetworkState_c!HeadPosition={:#x}", server_position+0xC+0xC);	// This offset has historically been inbetween ClientPosition and MouseLook
-		let _ = writeln!(f.ini, "PlayerNetworkState_c!MouseLook={:#x}", mouse_look);
-		let _ = writeln!(f.ini, "PlayerNetwork_c!State={:#x}", state);
+		let _ = writeln!(o, "PlayerNetworkState_c!fields.ServerVelocity={:#x}", server_velocity);
+		let _ = writeln!(o, "PlayerNetworkState_c!fields.ClientVelocity={:#x}", server_velocity+0xC);
+		let _ = writeln!(o, "PlayerNetworkState_c!fields.ServerPosition={:#x}", server_position);
+		let _ = writeln!(o, "PlayerNetworkState_c!fields.ClientPosition={:#x}", server_position+0xC);
+		let _ = writeln!(o, "PlayerNetworkState_c!fields.HeadPosition={:#x}", server_position+0xC+0xC);	// This offset has historically been inbetween ClientPosition and MouseLook
+		let _ = writeln!(o, "PlayerNetworkState_c!fields.MouseLook={:#x}", mouse_look);
+		let _ = writeln!(o, "PlayerNetwork_c!fields.State={:#x}", state);
 
 	} 
 	else {
@@ -88,46 +72,48 @@ fn player_network_state(f: &mut super::Output, bin: PeFile<'_>) {
 	}
 }
 
-fn local_player_network_state(f: &mut super::Output, bin: PeFile<'_>) {
+fn local_player_network_state(o: &mut String, bin: PeFile<'_>) {
 
 	let mut save = [0;4];
 
-	// ref: 14FB051
+	// reo: 14FB051
 	if bin.scanner().finds_code(pat!("F30F100D${0AD7A3BD} F20F?? [185-200] E8???? 488B05${'} 488B80B8000000 488D????? 488B50u1"), &mut save) {
 		let player_network_state_typeinfo = save[1];
 		let local = save[2];
-		let _ = writeln!(f.ini, "PlayerNetworkState_c={:#x}", player_network_state_typeinfo);
-		let _ = writeln!(f.ini, "PlayerNetworkState_c!Local={:#x}", local);
+		let _ = writeln!(o, "PlayerNetworkState_c={:#x}", player_network_state_typeinfo);
+		let _ = writeln!(o, "PlayerNetworkState_c!static_fields={:#x}", 0xB8);
+		let _ = writeln!(o, "PlayerNetworkState_c!static_fields!Local={:#x}", local);
 	} 
 	else {
 		crate::print_error("unable to find local_player_network_state!");
 	}
 }
 
-fn player_network(f: &mut super::Output, bin: PeFile<'_>) {
+fn player_network(o: &mut String, bin: PeFile<'_>) {
 
 	let mut save = [0;4];
 
-	// ref: CC9C7D (MainLoop)
+	// reo: CC9C7D (MainLoop)
 	if bin.scanner().matches_code(pat!("488BC8 E8???? 488B05${'} 488B80B8000000 488B40u1 4885C0 0F????? 488B4010 4885C0 0F????? 4863CB 3B5818 0F83???? 488B4CC820")).next(&mut save) {
 		let player_network = save[1];
 		let instances_list = save[2];
-		let _ = writeln!(f.ini, "PlayerNetwork_c={:#x}", player_network);
-		let _ = writeln!(f.ini, "PlayerNetwork_c!FastListA_InstancesList={:#x}", instances_list);
+		let _ = writeln!(o, "PlayerNetwork_c={:#x}", player_network);
+		let _ = writeln!(o, "PlayerNetwork_c!static_fields={:#x}", 0xB8);
+		let _ = writeln!(o, "PlayerNetwork_c!static_fields!FastListA_InstancesList={:#x}", instances_list);
 	} 
 	else {
 		crate::print_error("unable to find player_network!");
 	}
 }
 
-fn player_network_state_weapon_gadget_manager(f: &mut super::Output, bin: PeFile<'_>) {
+fn player_network_state_weapon_gadget_manager(o: &mut String, bin: PeFile<'_>) {
 	let mut save = [0;8];
 
-	// ref: 0129D010, PlayerNetworkState__get_CurrentToolSafe
+	// reo: 0129D010, PlayerNetworkState__get_CurrentToolSafe
 	if bin.scanner().finds_code(pat!("0FB687u4 83F805 (77? | 0F87????) 488D15???? 8B8C82A4??? 4803CA FFE1'"), &mut save) {
 		let current_loadout_index = save[1];
 		let saved_pos = save[2];
-		let _ = writeln!(f.ini, "PlayerNetworkState_c!CurrentLoadoutIndex={:#x}", current_loadout_index);
+		let _ = writeln!(o, "PlayerNetworkState_c!fields.CurrentLoadoutIndex={:#x}", current_loadout_index);
 
 		let range = Range { start: saved_pos, end: saved_pos + 0x60 };
 		if bin.scanner().finds(pat!("488B?u4 4883C4? [2-15] 488B?u4 4883C4? [2-15] 488B?u4 4883C4? [2-15] 488B?u4 4883C4? [2-15] 488B?u4 4883C4? [2-15] 488B?u4 4883C4?'"), range, &mut save) {
@@ -139,17 +125,17 @@ fn player_network_state_weapon_gadget_manager(f: &mut super::Output, bin: PeFile
 			let throwable = save[6];
 			let saved_pos = save[7];
 
-			let _ = writeln!(f.ini, "PlayerNetworkState_c!=Primary{:#x}", primary);
-			let _ = writeln!(f.ini, "PlayerNetworkState_c!=Secondary{:#x}", secondary);
-			let _ = writeln!(f.ini, "PlayerNetworkState_c!=FirstAid{:#x}", first_aid);
-			let _ = writeln!(f.ini, "PlayerNetworkState_c!=ToolA{:#x}", tool_a);
-			let _ = writeln!(f.ini, "PlayerNetworkState_c!=ToolB{:#x}", tool_b);
-			let _ = writeln!(f.ini, "PlayerNetworkState_c!=Throwable{:#x}", throwable);
+			let _ = writeln!(o, "PlayerNetworkState_c!fields.Primary={:#x}", primary);
+			let _ = writeln!(o, "PlayerNetworkState_c!fields.Secondary={:#x}", secondary);
+			let _ = writeln!(o, "PlayerNetworkState_c!fields.FirstAid={:#x}", first_aid);
+			let _ = writeln!(o, "PlayerNetworkState_c!fields.ToolA={:#x}", tool_a);
+			let _ = writeln!(o, "PlayerNetworkState_c!fields.ToolB={:#x}", tool_b);
+			let _ = writeln!(o, "PlayerNetworkState_c!fields.Throwable={:#x}", throwable);
 
 			let range = Range { start: saved_pos, end: saved_pos + 0x200 };
 			if bin.scanner().finds(pat!("488B80u4 488B5C"), range, &mut save) {
 				let item = save[1];
-				let _ = writeln!(f.ini, "AWeapon!Item={:#x}", item);
+				let _ = writeln!(o, "AWeapon_c!fields.Item={:#x}", item);
 			}
 			else {
 				crate::print_error("unable to find AWeapon!Item!");
@@ -165,4 +151,5 @@ fn player_network_state_weapon_gadget_manager(f: &mut super::Output, bin: PeFile
 }
 
 
-// ref: FirstPerson_FPSway_TypeInfo!Instance, 1550E38
+// reo: FirstPerson_FPSway_TypeInfo!Instance, 1550E38
+// god pattern for IDA: 48 8B ?? ?? ?? ?? ??  48 8B ?? B8 00 00 00  48 8B ?8

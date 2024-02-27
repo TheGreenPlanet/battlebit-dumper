@@ -2,12 +2,6 @@ use std::fmt;
 
 mod misc;
 
-#[derive(Default)]
-pub struct Output {
-	pub ini: String,
-	pub human: String,
-}
-
 // Nicely format supposedly valid identifier-like strings
 fn ident(s: &str) -> impl '_ + fmt::Display {
 	fmtools::fmt! { move
@@ -17,8 +11,8 @@ fn ident(s: &str) -> impl '_ + fmt::Display {
 	}
 }
 
-pub fn parse(f: &mut Output, image: &[u8]) {
+pub fn parse(o: &mut String, image: &[u8]) {
 	use pelite::pe64::*;
 	let bin = PeFile::from_bytes(image).unwrap();
-	misc::print(f, bin);
+	misc::print(o, bin);
 }
