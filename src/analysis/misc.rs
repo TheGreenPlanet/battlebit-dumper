@@ -137,7 +137,7 @@ fn player_network_state_weapon_gadget_manager(o: &mut String, bin: PeFile<'_>) {
 			let range = Range { start: saved_pos, end: saved_pos + 0x200 };
 			if bin.scanner().finds(pat!("488B80u4 488B5C"), range, &mut save) {
 				let item = save[1];
-				let _ = writeln!(o, "AWeapon_c!fields.Item={:#x}", item);
+				let _ = writeln!(o, "WeaponManager_c!fields.Item={:#x}", item);
 			}
 			else {
 				crate::print_error("unable to find AWeapon!Item!");
