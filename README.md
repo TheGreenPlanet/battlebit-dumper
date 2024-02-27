@@ -15,7 +15,7 @@ Massive credits to [CasualX](https://github.com/CasualX) for [pelite](https://gi
 ## Build and Run
 To dump the game offsets simply replace `/PATH_TO_BATTLEBIT/` with your own path.
 
-### Dump offsets:
+### Dump offsets to file:
 ```bash
 cargo run --release -- "/PATH_TO_BATTLEBIT/GameAssembly.dll" > stdout.ini
 ```
