@@ -121,7 +121,7 @@ fn player_network(f: &mut super::Output, bin: PeFile<'_>) {
 }
 
 fn player_network_state_weapon_gadget_manager(f: &mut super::Output, bin: PeFile<'_>) {
-	let mut save = [0;7];
+	let mut save = [0;8];
 
 	// ref: 0129D010, PlayerNetworkState__get_CurrentToolSafe
 	if bin.scanner().finds_code(pat!("0FB687u4 83F805 (77? | 0F87????) 488D15???? 8B8C82A4??? 4803CA FFE1'"), &mut save) {
@@ -130,13 +130,14 @@ fn player_network_state_weapon_gadget_manager(f: &mut super::Output, bin: PeFile
 		let _ = writeln!(f.ini, "PlayerNetworkState_c!CurrentLoadoutIndex={:#x}", current_loadout_index);
 
 		let range = Range { start: saved_pos, end: saved_pos + 0x60 };
-		if bin.scanner().finds(pat!("488B?u4 4883C4? [2-15] 488B?u4 4883C4? [2-15] 488B?u4 4883C4? [2-15] 488B?u4 4883C4? [2-15] 488B?u4 4883C4? [2-15] 488B?u4 4883C4? [2-15]"), range, &mut save) {
+		if bin.scanner().finds(pat!("488B?u4 4883C4? [2-15] 488B?u4 4883C4? [2-15] 488B?u4 4883C4? [2-15] 488B?u4 4883C4? [2-15] 488B?u4 4883C4? [2-15] 488B?u4 4883C4?'"), range, &mut save) {
 			let primary = save[1];
 			let secondary = save[2];
 			let first_aid = save[3];
 			let tool_a = save[4];
 			let tool_b = save[5];
 			let throwable = save[6];
+			let saved_pos = save[7];
 
 			let _ = writeln!(f.ini, "PlayerNetworkState_c!=Primary{:#x}", primary);
 			let _ = writeln!(f.ini, "PlayerNetworkState_c!=Secondary{:#x}", secondary);
@@ -144,16 +145,22 @@ fn player_network_state_weapon_gadget_manager(f: &mut super::Output, bin: PeFile
 			let _ = writeln!(f.ini, "PlayerNetworkState_c!=ToolA{:#x}", tool_a);
 			let _ = writeln!(f.ini, "PlayerNetworkState_c!=ToolB{:#x}", tool_b);
 			let _ = writeln!(f.ini, "PlayerNetworkState_c!=Throwable{:#x}", throwable);
+
+			let range = Range { start: saved_pos, end: saved_pos + 0x200 };
+			if bin.scanner().finds(pat!("488B80u4 488B5C"), range, &mut save) {
+				let item = save[1];
+				let _ = writeln!(f.ini, "AWeapon!Item={:#x}", item);
+			}
+			else {
+				crate::print_error("unable to find AWeapon!Item!");
+			}
 		}
 		else {
 			crate::print_error("unable to find weapon_gadget_manager!");
 		}
-
-		let local = save[2];
-		let _ = writeln!(f.ini, "PlayerNetworkState_c!Local={:#x}", local);
 	} 
 	else {
-		crate::print_error("unable to find local_player_network_state!");
+		crate::print_error("unable to find CurrentLoadoutIndex!");
 	}
 }
 
