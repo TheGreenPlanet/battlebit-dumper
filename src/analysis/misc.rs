@@ -159,9 +159,9 @@ fn player_network_state_is_down(o: &mut String, bin: PeFile<'_>) {
 	// ref: 00B5E0B0, THPController::OnThreadUpdate
 	if bin.scanner().finds_code(pat!("4438B0u4 0F85???? 4438B0u4 74? F30F1005${0000A041} EB?"), &mut save) {
 		let is_down = save[1];
-		let idk_something_that_affects_distance = save[2];
+		let is_friendly = save[2];
 		let _ = writeln!(o, "PlayerNetworkState_c!fields.IsDown={:#x}", is_down);
-		let _ = writeln!(o, "PlayerNetworkState_c!fields.IdkSomeBoolThatAffectsDistance={:#x}", idk_something_that_affects_distance);
+		let _ = writeln!(o, "PlayerNetworkState_c!fields.IsFriendly={:#x}", is_friendly);
 	} 
 	else {
 		crate::print_error("unable to find player_network_state_is_down!");
