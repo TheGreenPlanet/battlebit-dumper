@@ -14,6 +14,7 @@ pub fn print(o: &mut String, bin: PeFile<'_>) {
 	player_network_state_statics(o, bin);
 	local_player_network_state(o, bin);
 	player_network(o, bin);
+	bit_testing(o, bin);
 	
 	let _ = writeln!(o);
 }
@@ -179,6 +180,21 @@ fn player_network_state_statics(o: &mut String, bin: PeFile<'_>) {
 	} 
 	else {
 		crate::print_error("unable to find player_network_state_statics!");
+	}
+}
+
+fn bit_testing(o: &mut String, bin: PeFile<'_>) {
+	let mut save = [0;4];
+
+	if bin.scanner().finds_code(pat!("E8${[60-70] 33C9 E8$ [80-90] E8???? 488B?${'} 488B80B8000000 0FB640u1} 84C0 B990D00300 0F45F1"), &mut save) {
+		let bit_testing_typeinfo = save[1];
+		let training_ground = save[2];
+		let _ = writeln!(o, "BitTesting_c={:#x}", bit_testing_typeinfo);
+		let _ = writeln!(o, "BitTesting_c!static_fields={:#x}", 0xb8);
+		let _ = writeln!(o, "BitTesting_c!static_fields!TrainingGround={:#x}", training_ground);
+	} 
+	else {
+		crate::print_error("unable to find bit_testing!");
 	}
 }
 
