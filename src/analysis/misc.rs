@@ -15,6 +15,9 @@ pub fn print(o: &mut String, bin: PeFile<'_>) {
 	local_player_network_state(o, bin);
 	player_network(o, bin);
 	bit_testing(o, bin);
+	keybindings_infantry_raw_aim(o, bin);
+	game_tick_and_lastshottime(o, bin);
+	tool_stats_velocity_gravity(o, bin);
 	
 	let _ = writeln!(o);
 }
@@ -65,7 +68,6 @@ fn player_network_state(o: &mut String, bin: PeFile<'_>) {
 		let _ = writeln!(o, "PlayerNetworkState_c!fields.ClientVelocity={:#x}", server_velocity+0xC);
 		let _ = writeln!(o, "PlayerNetworkState_c!fields.ServerPosition={:#x}", server_position);
 		let _ = writeln!(o, "PlayerNetworkState_c!fields.ClientPosition={:#x}", server_position+0xC);
-		let _ = writeln!(o, "PlayerNetworkState_c!fields.HeadPosition={:#x}", server_position+0xC+0xC);	// This offset has historically been inbetween ClientPosition and MouseLook
 		let _ = writeln!(o, "PlayerNetworkState_c!fields.MouseLook={:#x}", mouse_look);
 		let _ = writeln!(o, "PlayerNetwork_c!fields.State={:#x}", state);
 
@@ -135,14 +137,14 @@ fn player_network_state_weapon_gadget_manager(o: &mut String, bin: PeFile<'_>) {
 			let _ = writeln!(o, "PlayerNetworkState_c!fields.ToolB={:#x}", tool_b);
 			let _ = writeln!(o, "PlayerNetworkState_c!fields.Throwable={:#x}", throwable);
 
-			let range = Range { start: saved_pos, end: saved_pos + 0x200 };
-			if bin.scanner().finds(pat!("488B80u4 488B5C"), range, &mut save) {
-				let item = save[1];
-				let _ = writeln!(o, "WeaponManager_c!fields.Item={:#x}", item);
-			}
-			else {
-				crate::print_error("unable to find AWeapon!Item!");
-			}
+			// let range = Range { start: saved_pos, end: saved_pos + 0x200 };
+			// if bin.scanner().finds(pat!("488B80u4 488B5C"), range, &mut save) {
+			// 	let item = save[1];
+			// 	let _ = writeln!(o, "WeaponManager_c!fields.Item={:#x}", item);
+			// }
+			// else {
+			// 	crate::print_error("unable to find AWeapon!Item!");
+			// }
 		}
 		else {
 			crate::print_error("unable to find weapon_gadget_manager!");
@@ -195,6 +197,68 @@ fn bit_testing(o: &mut String, bin: PeFile<'_>) {
 	} 
 	else {
 		crate::print_error("unable to find bit_testing!");
+	}
+}
+
+fn keybindings_infantry_raw_aim(o: &mut String, bin: PeFile<'_>) {
+	let mut save = [0;4];
+
+	// ref: 157FE0F, Keybindings_Infantry$$get_isAimingNonBlocked
+	if bin.scanner().finds_code(pat!("488B05${'} 488B88B8000000 80790200"), &mut save) {
+		let keybindings_infantry_c = save[1];
+		let raw_aim = save[2];
+		let _ = writeln!(o, "keybindings_infantry_c={:#x}", keybindings_infantry_c);
+		//let _ = writeln!(o, "keybindings_infantry_c!static_fields={:#x}", 0xB8);
+		//let _ = writeln!(o, "keybindings_infantry_c!static_fields!raw_aim={:#x}", raw_aim);
+	} 
+	else {
+		crate::print_error("unable to find keybindings_infantry_raw_aim!");
+	}
+}
+
+fn game_tick_and_lastshottime(o: &mut String, bin: PeFile<'_>) {
+	let mut save = [0;4];
+
+	// ref: 0x00B5E0B0, THPController::OnThreadUpdate
+	if bin.scanner().finds_code(pat!("F30F58F6 F30F1048? 0F28C1 F30F5C81???? F30F1189???? 488B05${'}'"), &mut save) {
+		let game_tick = save[1];
+		let saved_pos = save[2];
+		let _ = writeln!(o, "GameTick_c!={:#x}", game_tick);
+		
+		let range = Range { start: saved_pos, end: saved_pos + 100 };
+		if bin.scanner().finds(pat!("0F2FC6 488B88B8000000 488B05${'} F30F1071u1 [40-50] 488B80B8000000 F30F1170u1"), range, &mut save) {
+			let firstperson_tools_weaponmanager_c = save[1];
+			let now = save[2];
+			let lastlocalshot = save[3];
+
+			
+			let _ = writeln!(o, "firstperson_tools_weaponmanager_c={:#x}", firstperson_tools_weaponmanager_c);
+			let _ = writeln!(o, "GameTick_c!static_fields!Now={:#x}", now);
+			let _ = writeln!(o, "firstperson_tools_weaponmanager_c!static_fields!LastLocalShot={:#x}", lastlocalshot);
+		}
+		else {
+			crate::print_error("unable to find firstperson_tools_weaponmanager_c!");
+		}
+	} 
+	else {
+		crate::print_error("unable to find game_tick_and_lastshottime!");
+	}
+}
+
+fn tool_stats_velocity_gravity(o: &mut String, bin: PeFile<'_>) {
+	let mut save = [0;4];
+
+	// ref: 0x00B5E0B0, THPController::OnThreadUpdate
+	if bin.scanner().matches_code(pat!("488B83u4 F30F107C9120 4885C0 0F84???? 488B0D???? 8B78u1 F30F1070u1")).next(&mut save) {
+		let stats = save[1];
+		let velocity = save[2];
+		let gravity = save[3];
+		let _ = writeln!(o, "firstperson_tools_weaponmanager_c!tool_stats={:#x}", stats);
+		let _ = writeln!(o, "tool_stats!velocity={:#x}", velocity);
+		let _ = writeln!(o, "tool_stats!gravity={:#x}", gravity);
+	} 
+	else {
+		crate::print_error("unable to find tool_stats_velocity_gravity!");
 	}
 }
 
