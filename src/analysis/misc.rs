@@ -32,7 +32,7 @@ fn header(o: &mut String, bin: PeFile<'_>) {
 
 
 fn main_camera(o: &mut String, bin: PeFile<'_>) {
-	let mut save = [0; 5];
+	let mut save = [0; 7];
 
 	// reo: 0D16080
 	// NOTE: this pattern is very reliable. Its derived from the MainCamera::WorldToScreenPoint method
@@ -48,6 +48,20 @@ fn main_camera(o: &mut String, bin: PeFile<'_>) {
 	}
 	else {
 		crate::print_error("unable to find MainCamera!");
+	}
+
+	if bin.scanner().matches_code(pat!("E8???? 488B05${'} 488B80B8000000 8B48? F2440F1048u1 F20F1070u1 8B78u1 89??")).next(&mut save) {
+		let _ = save[1]; // main_camera
+		let position = save[2];
+		let up_y = save[3];
+		let right = save[4];
+		let _ = writeln!(o, "MainCamera_c!static_fields!Position={:#x}", position);
+		//let _ = writeln!(o, "MainCamera_c!static_fields!Forward={:#x}", forward);
+		let _ = writeln!(o, "MainCamera_c!static_fields!Up={:#x}", up_y - 0x4);
+		let _ = writeln!(o, "MainCamera_c!static_fields!Right={:#x}", right);
+	}
+	else {
+		crate::print_error("unable to find MainCamera Vector3's!");
 	}
 }
 
@@ -253,9 +267,9 @@ fn tool_stats_velocity_gravity(o: &mut String, bin: PeFile<'_>) {
 		let stats = save[1];
 		let velocity = save[2];
 		let gravity = save[3];
-		let _ = writeln!(o, "firstperson_tools_weaponmanager_c!tool_stats={:#x}", stats);
-		let _ = writeln!(o, "tool_stats!velocity={:#x}", velocity);
-		let _ = writeln!(o, "tool_stats!gravity={:#x}", gravity);
+		let _ = writeln!(o, "firstperson_tools_weaponmanager_c!fields.tool_stats={:#x}", stats);
+		let _ = writeln!(o, "tool_stats!fields.velocity={:#x}", velocity);
+		let _ = writeln!(o, "tool_stats!fields.gravity={:#x}", gravity);
 	} 
 	else {
 		crate::print_error("unable to find tool_stats_velocity_gravity!");
